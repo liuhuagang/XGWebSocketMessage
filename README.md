@@ -179,6 +179,6 @@ public:
 ```
 
 ## Heartbeat mechanism
-The Plugin have been implemented:
-1.The connection times out after 10 seconds, and the server or client determines that the connection is unavailable
+The Plugin have been implemented:  
+1.The connection times out after 10 seconds, and the server or client determines that the connection is unavailable  
 2.Every 3 seconds, a heartbeat communication occurs.
