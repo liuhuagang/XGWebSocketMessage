@@ -1,13 +1,36 @@
 # XGWebSocketMessage
+版本:2.1</br>
 ![image](DocumentPictures/Product/G_ServerShow.png)  
+- [XGWebSocketMessage](#xgwebsocketmessage)
+	- [简介](#简介)
+	- [使用流程](#使用流程)
+	- [函数速览](#函数速览)
+	- [服务端](#服务端)
+		- [绑定代理](#绑定代理)
+		- [开启服务器](#开启服务器)
+		- [关闭服务器](#关闭服务器)
+		- [关闭连接](#关闭连接)
+		- [发送信息](#发送信息)
+	- [客户端](#客户端)
+		- [绑定代理](#绑定代理-1)
+		- [开启连接](#开启连接)
+		- [关闭连接](#关闭连接-1)
+		- [发送信息](#发送信息-1)
+	- [示例项目](#示例项目)
+	- [通讯结构体](#通讯结构体)
+	- [心跳机制](#心跳机制)
+	- [打包](#打包)
+	- [联系方式](#联系方式)
+
 ## 简介
+
 &emsp;&emsp;XGWebSocketMessage 是一款虚幻引擎5插件,它支持你在虚幻项目(客户端,聆听服务器,专属服务器,单例游戏)之间相互通信.它是基于UE5内置的WebSocket和WebSocketServer进行开发的,同时具备服务端和客户端.  
 &emsp;&emsp;强烈建议你同时使用该插件的服务端和客户端.如果你单独使用服务端或客户端,那么你必须遵守该插件的通讯结构协议及心跳机制.  
 &emsp;&emsp;根据你的使用情况,你可能需要公网IP并开放相应的端口.  
-&emsp;&emsp;插件地址:  
-&emsp;&emsp;&emsp;&emsp;[虚幻商城插件地址(等待通过后上传,目前不可用)]();  
+&emsp;&emsp;FAB商城插件地址:  
+&emsp;&emsp;&emsp;&emsp;[XGWebSocketMessage](https://www.fab.com/zh-cn/listings/17f3be65-ceb5-4da0-b546-161e7e75012d);  
 &emsp;&emsp;示例项目下载:  
-&emsp;&emsp;&emsp;&emsp;[XGWebSocketMessageDemo(等待通过后上传,目前不可用)]();  
+&emsp;&emsp;&emsp;&emsp;[XGWebSocketMessageDemo](https://github.com/liuhuagang/XGWebSocketMessage/tree/main/BPDemo/XGWebSocketDemo);你需要先下载安装插件才能顺利打开demo</br>
 &emsp;&emsp;英文说明:  
 &emsp;&emsp;&emsp;&emsp;[README](./README.md)  
 &emsp;&emsp;中文说明:  
@@ -187,8 +210,12 @@ public:
 超过10秒后认为连接超时,该连接会被服务器或者客户端判定为不可用  
 每隔3秒,会进行一次心跳通信.
 
+## 打包
+&emsp;&emsp;Windows & Andriod:[5.3-5.5].<br>
+&emsp;&emsp;服务器接口仅在Windows上可调用<br>
+
 ## 联系方式  
-如果有任何[XGWebSocketMessageDemo(等待通过后上传,目前不可用)]()插件产品问题,请联系我.  
+如果有任何[XGWebSocketMessage](https://www.fab.com/zh-cn/listings/17f3be65-ceb5-4da0-b546-161e7e75012d)插件产品问题,请联系我.  
 
 QQ:
 709777172  

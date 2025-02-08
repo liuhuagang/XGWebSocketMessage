@@ -1,13 +1,37 @@
 # XGWebSocketMessage
+Plugin Version:2.1 </br> 
+
 ![image](DocumentPictures/Product/G_ServerShow.png)  
+- [XGWebSocketMessage](#xgwebsocketmessage)
+	- [Brief](#brief)
+	- [Use process](#use-process)
+	- [Function entry](#function-entry)
+	- [Server-side](#server-side)
+		- [Binding agents](#binding-agents)
+		- [Start the server](#start-the-server)
+		- [Stop the server](#stop-the-server)
+		- [Close the connection](#close-the-connection)
+		- [Send the message](#send-the-message)
+	- [Client-side](#client-side)
+		- [Binding agents](#binding-agents-1)
+		- [Start the connection](#start-the-connection)
+		- [Close the connection](#close-the-connection-1)
+		- [Send Message](#send-message)
+	- [Sample Project](#sample-project)
+	- [Communication structure](#communication-structure)
+	- [Heartbeat mechanism](#heartbeat-mechanism)
+	- [Package](#package)
+	- [Contact Information](#contact-information)
+
 ## Brief
+
 &emsp;&emsp;XGWebSocketMessage is an Unreal Engine 5 plugin that allows you to communicate between Unreal projects (clients, listening servers, dedicated servers, standalones). It is developed based on the built-in WebSocket and WebSocketServer of UE5, with both server and client.  
 &emsp;&emsp;It is highly recommended that you use both the server side and the client side of the plugin. If you use the server or client separately, then you must comply with the communication structure protocol and heartbeat mechanism of the plugin.  
 &emsp;&emsp;Depending on your usage, you may need a public IP and open the corresponding port.  
 &emsp;&emsp;Plugin URL:  
-&emsp;&emsp;&emsp;&emsp;[XGWebSocketMessage(Wait for upload, currently unavailable)]();  
+&emsp;&emsp;&emsp;&emsp;[XGWebSocketMessage](https://www.unrealengine.com/marketplace/zh-CN/product/xgwebsocketmessage);  
 &emsp;&emsp;Sample project download URL:  
-&emsp;&emsp;&emsp;&emsp;[XGWebSocketMessageDemo(Wait for upload, currently unavailabl)]();  
+&emsp;&emsp;&emsp;&emsp;[XGWebSocketMessageDemo](https://github.com/liuhuagang/XGWebSocketMessage/tree/main/BPDemo/XGWebSocketDemo);  You need to download and install the plug-in to successfully open the demo
 &emsp;&emsp;English description:  
 &emsp;&emsp;&emsp;&emsp;[README](./README.md)  
 &emsp;&emsp;Chinese description:  
@@ -179,6 +203,24 @@ public:
 ```
 
 ## Heartbeat mechanism
-The Plugin have been implemented:  
-1.The connection times out after 10 seconds, and the server or client determines that the connection is unavailable  
+The Plugin have been implemented:
+1.The connection times out after 10 seconds, and the server or client determines that the connection is unavailable
 2.Every 3 seconds, a heartbeat communication occurs.
+
+## Package
+&emsp;&emsp;Windows & Andriod:[5.3-5.5].<br>
+&emsp;&emsp;The server interface is only callable on Windows<br>
+
+## Contact Information    
+
+Please contact me if you have any questions about [XGWebSocketMessage](https://www.unrealengine.com/marketplace/zh-CN/product/xgwebsocketmessage).
+
+QQ:
+709777172  
+
+Email:
+709777172@qq.com  
+
+bilibili:
+[虚幻小刚](https://space.bilibili.com/8383085)  
+
