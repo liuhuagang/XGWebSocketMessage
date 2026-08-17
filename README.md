@@ -76,6 +76,93 @@ async blueprint nodes  ports auto-allocated 7777-8000
 > All `Bat/` scripts locate the executables via relative paths (`%~dp0`) — just double-click them, no working-directory requirements.
 > Command-line build (optional): `<UE5.8Install>\Engine\Build\BatchFiles\Build.bat XGMultiPlayerEditor Win64 Development -Project="<repo path>\XGMultiPlayer.uproject" -WaitMutex`
 
+## Typical Flow: Node Operation Guide
+
+> All nodes below live under the blueprint categories `XGWebSocketMessage|Player|Room` (actions) and `XGWebSocketMessage|Player` (queries).
+> They are async nodes: `Then` fires when the request is sent; `OnSuccess` on success; `OnFail` on failure (carries `AsyncID / Result / RoomError / Message`).
+
+### Prerequisites
+
+1. Plugin version matched (see "Version Compatibility")
+2. Manage process running (`Bat\Dev\Start_Manage.bat`, listening on WS 9033)
+3. Project compiled; the client can reach the Manage machine (localhost for local testing)
+
+### 1. Connect to Manage (login)
+
+| Node / Event | Description |
+|--------------|-------------|
+| `ConnectToManage(ManageServerInfo)` | Connects to Manage and completes player role initialization (`ManageServerInfo` = Manage IP + port 9033) |
+| `SetPlayerName(PlayerName)` | Sets the player name after connecting (shown in rooms; can be changed anytime) |
+| Event `OnManageConnected` | Connection handshake succeeded (fires after the login flow completes) |
+
+Prerequisite: Manage running and reachable. Failure: `ConnectFailed` / `Timeout`.
+
+### 2. Query the room list
+
+| Node | Description |
+|------|-------------|
+| `RequestRoomList()` | Fetches all rooms from Manage (`OnSuccess(RoomList)` with name/owner/capacity/has-password/level) |
+
+Prerequisite: connected. Room passwords are never returned (only the `bHasPassword` flag).
+
+### 3. Create a room (become the owner)
+
+| Node | Description |
+|------|-------------|
+| `CreateMyRoom(RoomName, Password, MaxPlayers, LevelName)` | Creates a room; empty password = public room; `LevelName` is the initial level |
+
+Prerequisite: connected + not in any room. On success: `OnMyRoomRoleChanged(Owner)`, `GetMyRoomID()` valid, room info cached (`GetMyRoomInfo()`).
+
+### 4. Join a room (become a member)
+
+| Node | Description |
+|------|-------------|
+| `PlayerJoinRoom(RoomID, Password)` | Joins the given room; password required for protected rooms |
+
+Prerequisite: connected + not in any room + room not full. Failure: `RoomNotExist` / `WrongPassword` / `RoomFull` / `AlreadyInRoom`.
+
+### 5. Start the replica (owner launches the DS)
+
+| Node | Description |
+|------|-------------|
+| `StartMyRoomDS()` | Owner launches the room's linked DS process (level = room's current `LevelName`, port auto-allocated by Manage) |
+
+Prerequisite: **owner** + in room + replica not running. Observe state: `GetMyRoomInfo().DSState` goes `None → Starting → Running` (push-maintained; bind `OnMyRoomInfoChanged`). Failure: member call → `NotOwner`; already running → `AlreadyRunning`.
+
+### 6. Enter the replica
+
+| Node | Description |
+|------|-------------|
+| `JoinRoomDS()` | Travels into my room's linked replica (does the `ClientTravel` internally) |
+
+Prerequisite: in room + replica `Running`. On success: `GetMyDSPhase() == InDS`. Leaving the replica state is automatic when the replica is stopped/dissolved (via push).
+
+### 7. In-room operations (permission per node)
+
+| Node | Description | Permission |
+|------|-------------|------------|
+| `SendRoomMessage(Message)` | Room chat, broadcast to all members (including the sender via `OnCustomMessageReceived`, `MessageType == "RoomChat"`, parse `SenderName`/`Content`) | Everyone |
+| `ChangeMyRoomLevel(LevelName)` | Changes the room level; rejected while the replica is running (`AlreadyRunning` — stop the replica first) | Owner only |
+| `KickPlayerFromMyRoom(TargetServerConnectionID)` | Kicks the given member (ID from `GetMyRoomInfo().Members[].ServerConnectionID`); the kicked player gets `OnKickedFromRoom` and disconnects from the replica | Owner only |
+| `StopMyRoomDS()` | Stops the replica (room is kept, DSState resets to `None`) | Owner only |
+| `CloseMyRoom()` | Dissolves the room + kills the replica; all members (except the initiator) get `OnRoomClosed` | Owner only |
+
+### 8. State queries & reconciliation
+
+| Node / Query | Description |
+|--------------|-------------|
+| `GetMyRoomID()` / `GetMyRoomRole()` / `GetMyDSPhase()` / `GetMyRoomInfo()` | Synchronous reads of the current session state (idle/owner/member; DS phase; cached room info) |
+| `RefreshMyRoomRole()` / `RefreshMyRoomInfo()` | Reconciles with Manage's authoritative data (fallback for changes missed while disconnected) |
+| Events `OnMyRoomRoleChanged` / `OnMyRoomInfoChanged` / `OnRoomUpdate` / `OnRoomClosed` / `OnKickedFromRoom` | Push updates on state changes (fire only on actual changes; bind once and let the UI update itself) |
+
+### Failure handling conventions
+
+Every request node's `OnFail` carries `(AsyncID, Result, RoomError, Message)`:
+
+- Not connected → `NotConnected`; request timeout → `Timeout`; connection closed → `ConnectionClosed`
+- Local pre-check failed (e.g. member calling an owner operation) → `Rejected` + `RoomError=NotOwner`
+- Server-side rejection (room missing/full/wrong password etc.) → `Rejected` + matching `RoomError`
+
 ## Port Conventions
 
 | Port | Purpose |

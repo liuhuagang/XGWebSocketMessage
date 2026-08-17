@@ -76,6 +76,93 @@ Client Client N        DS（游戏副本进程）
 > 所有 `Bat/` 脚本均使用相对路径定位 exe（`%~dp0`），双击即可运行，不依赖当前目录。
 > 命令行编译（可选）：`<UE5.8安装路径>\Engine\Build\BatchFiles\Build.bat XGMultiPlayerEditor Win64 Development -Project="<本仓库路径>\XGMultiPlayer.uproject" -WaitMutex`
 
+## 典型流程：节点操作手册
+
+> 以下节点全部位于蓝图分类 `XGWebSocketMessage|Player|Room`（操作类）与 `XGWebSocketMessage|Player`（查询类）。
+> 节点统一为异步节点：`Then` 激活表示请求已发出；`OnSuccess` 成功；`OnFail` 失败（携带 `AsyncID / Result / RoomError / Message`）。
+
+### 前置要求
+
+1. 插件版本配套（见「版本配套」）
+2. Manage 进程已启动（`Bat\Dev\Start_Manage.bat`，监听 WS 9033）
+3. 工程已编译，客户端能访问 Manage 所在机器（本地联调即本机）
+
+### 1. 连接 Manage（登录）
+
+| 节点/事件 | 说明 |
+|-----------|------|
+| `ConnectToManage(ManageServerInfo)` | 连接 Manage 并完成玩家角色初始化（`ManageServerInfo` 填 Manage 的 IP 与端口 9033） |
+| `SetPlayerName(PlayerName)` | 成功后设置玩家名（房间内显示用，可随时改名） |
+| 事件 `OnManageConnected` | 连接握手成功（登录流程完成后触发） |
+
+前置：Manage 进程运行中、网络可达。失败：未连上 → `ConnectFailed` / 超时 → `Timeout`。
+
+### 2. 查询房间列表
+
+| 节点 | 说明 |
+|------|------|
+| `RequestRoomList()` | 拉取 Manage 当前全部房间（`OnSuccess(RoomList)` 含房间名/房主/人数/是否有密码/关卡） |
+
+前置：已连接 Manage。房间密码不返回（仅 `bHasPassword` 标记）。
+
+### 3. 创建房间（成为房主）
+
+| 节点 | 说明 |
+|------|------|
+| `CreateMyRoom(RoomName, Password, MaxPlayers, LevelName)` | 建房；密码留空为公开房；`LevelName` 为初始关卡名 |
+
+前置：已连接 + 不在任何房间。成功后：`OnMyRoomRoleChanged(Owner)`、`GetMyRoomID()` 有效、房间信息入缓存（`GetMyRoomInfo()`）。
+
+### 4. 加入房间（成为成员）
+
+| 节点 | 说明 |
+|------|------|
+| `PlayerJoinRoom(RoomID, Password)` | 加入指定房间；密码房必须匹配密码 |
+
+前置：已连接 + 不在任何房间 + 房间未满员。失败：`RoomNotExist` / `WrongPassword` / `RoomFull` / `AlreadyInRoom`。
+
+### 5. 创建副本（房主开 DS）
+
+| 节点 | 说明 |
+|------|------|
+| `StartMyRoomDS()` | 房主拉起房间关联的 DS 副本进程（关卡取房间当前 `LevelName`，端口由 Manage 自动分配） |
+
+前置：**房主** + 在房间内 + 副本未运行。副本状态观察：`GetMyRoomInfo().DSState` 变化 `None → Starting → Running`（推送自动维护，绑定 `OnMyRoomInfoChanged` 即可）。失败：成员调用 → `NotOwner`；副本已在运行 → `AlreadyRunning`。
+
+### 6. 进入副本
+
+| 节点 | 说明 |
+|------|------|
+| `JoinRoomDS()` | 跳转进入"我的房间"的关联副本（内部自动完成 `ClientTravel`） |
+
+前置：在房间内 + 副本 `Running`。成功后：`GetMyDSPhase() == InDS`。副本被关闭/解散时自动退出副本态并收到推送。
+
+### 7. 房间内操作（房主/成员权限见各节点）
+
+| 节点 | 说明 | 权限 |
+|------|------|------|
+| `SendRoomMessage(Message)` | 房间聊天，全员（含自己）收到 `OnCustomMessageReceived`（`MessageType == "RoomChat"`，解析出 `SenderName`/`Content`） | 全员 |
+| `ChangeMyRoomLevel(LevelName)` | 更换房间关卡；副本运行中拒绝（`AlreadyRunning`，须先停副本再换图） | 仅房主 |
+| `KickPlayerFromMyRoom(TargetServerConnectionID)` | 踢出指定成员（ID 取自成员列表 `GetMyRoomInfo().Members[].ServerConnectionID`）；被踢者收到 `OnKickedFromRoom` 并断开副本 | 仅房主 |
+| `StopMyRoomDS()` | 停止副本（房间保留，DSState 复位 `None`） | 仅房主 |
+| `CloseMyRoom()` | 解散房间 + 杀副本；全员（除发起者）收到 `OnRoomClosed` | 仅房主 |
+
+### 8. 状态查询与对账
+
+| 节点/查询 | 说明 |
+|-----------|------|
+| `GetMyRoomID()` / `GetMyRoomRole()` / `GetMyDSPhase()` / `GetMyRoomInfo()` | 同步读取当前会话状态（空闲/房主/成员；副本阶段；房间详情缓存） |
+| `RefreshMyRoomRole()` / `RefreshMyRoomInfo()` | 与 Manage 权威数据对账（断线期间变化兜底，如加入超时但实际成功） |
+| 事件 `OnMyRoomRoleChanged` / `OnMyRoomInfoChanged` / `OnRoomUpdate` / `OnRoomClosed` / `OnKickedFromRoom` | 状态变化推送（内容变化才触发，绑定后自动维护 UI） |
+
+### 失败处理约定
+
+所有请求节点 `OnFail` 统一携带 `(AsyncID, Result, RoomError, Message)`：
+
+- 未连接 Manage → `NotConnected`；请求超时 → `Timeout`；连接断开 → `ConnectionClosed`
+- 本地前置校验未过（如成员调用房主操作）→ `Rejected` + `RoomError=NotOwner`
+- 服务端拒绝（房间不存在/满员/密码错等）→ `Rejected` + 对应 `RoomError`
+
 ## 端口约定
 
 | 端口 | 用途 |
