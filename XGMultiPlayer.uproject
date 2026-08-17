@@ -1,0 +1,30 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{FC2C8B1C-4298-25E2-8B73-ECADB750DE1F}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "XGMultiPlayer",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "ModelingToolsEditorMode",
+			"Enabled": true,
+			"TargetAllowList": [
+				"Editor"
+			]
+		},
+		{
+			"Name": "XGWebSocketMessage",
+			"Enabled": true,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/91b68e2bec47495284670703a2bc5d7a"
+		}
+	]
+}
